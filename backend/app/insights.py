@@ -8,6 +8,7 @@ import httpx
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 MODEL = "qwen2.5:3b"
+OLLAMA_TIMEOUT = 45.0
 
 
 def summarize(history: list[dict]) -> dict:
@@ -48,7 +49,7 @@ def fallback_insights(summary: dict) -> dict:
     return {"source": "rules", "health_score": max(score, 0), "insights": tips[:3]}
 
 
-async def ai_insights(summary: dict, timeout: float = 20.0) -> dict:
+async def ai_insights(summary: dict, timeout: float = OLLAMA_TIMEOUT) -> dict:
     prompt = (
         "You are an SRE assistant. Given this system metrics summary, respond ONLY with JSON "
         '{"health_score": int 0-100, "insights": [3 short strings]}.\n'
@@ -69,3 +70,48 @@ async def ai_insights(summary: dict, timeout: float = 20.0) -> dict:
             return {"source": "ollama", "health_score": score, "insights": insights}
     except Exception:  # noqa: BLE001 - any failure falls back to rules
         return fallback_insights(summary)
+
+
+def fallback_answer(question: str, snap: dict, summary: dict) -> str:
+    q = question.lower()
+    procs = snap.get("processes", [])
+    top = ", ".join(f"{p['name']} ({p['cpu']}% CPU, {p['mem_mb']:.0f} MB)" for p in procs[:3])
+    if any(w in q for w in ("process", "app", "using", "hog", "slow")) and top:
+        return f"The busiest processes right now are {top}."
+    if any(w in q for w in ("memory", "ram")):
+        used, total = snap.get("ram_used_gb"), snap.get("ram_total_gb")
+        return f"Memory is at {snap.get('ram')}% ({used} of {total} GB)."
+    if "disk" in q or "storage" in q:
+        return f"The system disk is {snap.get('disk')}% full."
+    if "network" in q or "net" in q:
+        return (
+            f"Network is {snap.get('net_down', 0) / 1024:.1f} KB/s down and "
+            f"{snap.get('net_up', 0) / 1024:.1f} KB/s up."
+        )
+    tips = fallback_insights(summary)
+    return (
+        f"CPU {snap.get('cpu')}%, RAM {snap.get('ram')}%, disk {snap.get('disk')}%. "
+        f"Health score {tips['health_score']}/100. " + " ".join(tips["insights"])
+    )
+
+
+async def ask_ai(question: str, snap: dict, summary: dict, timeout: float = OLLAMA_TIMEOUT) -> dict:
+    state = {k: v for k, v in snap.items() if k not in ("alerts",)}
+    prompt = (
+        "You are Nebula, an SRE assistant monitoring this computer. Answer the user's question "
+        "in at most 3 concise sentences using only the data below.\n"
+        f"Current snapshot: {json.dumps(state)}\nRecent summary: {json.dumps(summary)}\n"
+        f"Question: {question}"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            r = await client.post(
+                OLLAMA_URL, json={"model": MODEL, "prompt": prompt, "stream": False}
+            )
+            r.raise_for_status()
+            answer = str(r.json()["response"]).strip()
+            if not answer:
+                raise ValueError("empty answer")
+            return {"source": "ollama", "answer": answer}
+    except Exception:  # noqa: BLE001 - any failure falls back to rules
+        return {"source": "rules", "answer": fallback_answer(question, snap, summary)}

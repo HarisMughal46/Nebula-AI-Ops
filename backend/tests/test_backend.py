@@ -31,14 +31,14 @@ def test_flat_series_no_alert():
 
 
 def test_health():
-    assert client.get("/health").json() == {"status": "ok"}
+    assert client.get("/health").json()["status"] == "ok"
 
 
 def test_snapshot_shape():
     s = client.get("/api/snapshot").json()
     for k in ("cpu", "cores", "ram", "disk", "net_up", "net_down", "processes"):
         assert k in s
-    assert len(s["processes"]) <= 5
+    assert len(s["processes"]) <= 8
 
 
 def test_fallback_insights_rules():

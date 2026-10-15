@@ -1,4 +1,4 @@
-"""Rolling z-score + static threshold anomaly detector."""
+"""Rolling z-score + configurable threshold anomaly detector."""
 
 from __future__ import annotations
 
@@ -10,9 +10,19 @@ THRESHOLDS = {"cpu": 90.0, "ram": 90.0, "disk": 95.0}
 
 
 class AnomalyDetector:
-    def __init__(self, window: int = 60, z: float = 3.0, min_samples: int = 10) -> None:
+    def __init__(
+        self,
+        window: int = 60,
+        z: float = 3.0,
+        min_samples: int = 10,
+        thresholds: dict[str, float] | None = None,
+    ) -> None:
         self.window, self.z, self.min_samples = window, z, min_samples
+        self.thresholds: dict[str, float] = dict(thresholds or THRESHOLDS)
         self.history: dict[str, deque[float]] = {}
+
+    def set_thresholds(self, thresholds: dict[str, float]) -> None:
+        self.thresholds.update(thresholds)
 
     def _stats(self, key: str) -> tuple[float, float]:
         h = self.history[key]
@@ -24,7 +34,7 @@ class AnomalyDetector:
         alerts: list[dict] = []
         for key, value in metrics.items():
             hist = self.history.setdefault(key, deque(maxlen=self.window))
-            limit = THRESHOLDS.get(key)
+            limit = self.thresholds.get(key)
             if limit is not None and value >= limit:
                 alerts.append(self._alert(key, value, "critical", f"{key} above {limit:.0f}%"))
             elif len(hist) >= self.min_samples:
