@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root { color-scheme: dark; }
+body {
+  background: radial-gradient(1200px 600px at 10% -10%, rgba(139,92,246,.18), transparent),
+              radial-gradient(1000px 500px at 110% 10%, rgba(34,211,238,.14), transparent), #050816;
+  color: #e2e8f0; min-height: 100vh;
+}
+.grid-bg {
+  background-image: linear-gradient(rgba(34,211,238,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,211,238,.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse at center, black 40%, transparent 85%);
+}
+.glass {
+  background: linear-gradient(145deg, rgba(15,23,42,.72), rgba(15,23,42,.45));
+  border: 1px solid rgba(148,163,184,.14); backdrop-filter: blur(14px);
+  border-radius: 1rem; box-shadow: 0 0 0 1px rgba(34,211,238,.03), 0 10px 40px -10px rgba(0,0,0,.6);
+  transition: box-shadow .3s, border-color .3s;
+}
+.glass:hover { border-color: rgba(34,211,238,.35); box-shadow: 0 0 30px -5px rgba(34,211,238,.25); }
+.neon-text { background: linear-gradient(90deg,#22d3ee,#a78bfa,#f0abfc); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@keyframes glow { 0%,100% { opacity: .55 } 50% { opacity: 1 } }
+.glow { animation: glow 2.4s ease-in-out infinite; }
