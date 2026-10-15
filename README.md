@@ -1,5 +1,4 @@
-
-| **[Nebula AI Ops](https://github.com/HarisMughal46/Nebula-AI-Ops)** | Futuristic real-time system telemetry dashboard: live WebSocket metrics, anomaly detection and local-LLM health insights. | FastAPI · WebSockets · Next.js · Tailwind · Ollama |<div align="center">
+<div align="center">
 
 # 🌌 NEBULA · AI Ops
 
