@@ -91,3 +91,13 @@ cd frontend; npm run typecheck; npm run build
 ## 📄 License
 
 MIT © Haris Mughal
+
+## Streamlit edition
+
+A pure-Python version of the dashboard (Streamlit, psutil, Plotly). It runs locally and on Streamlit Community Cloud, and falls back to rule-based AI answers when Ollama is not available. See [streamlit-app/](streamlit-app/) and its [README](streamlit-app/README.md).
+
+```powershell
+pip install -r streamlit-app/requirements.txt
+streamlit run streamlit-app/app.py
+```
+
